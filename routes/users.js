@@ -1,6 +1,7 @@
 var express = require('express');
 var router = express.Router();
 var bcrypt = require('bcrypt');
+const { ObjectId } = require('mongodb');
 var saltrounds = 10;
 
 var ResponseType = {
@@ -96,7 +97,6 @@ router.post('/signout', function(req, res, next) {
   });
 });
 
-
 // 점수 추가
 router.post('/addscore', async function(req, res, next) {
   try {
@@ -105,14 +105,17 @@ router.post('/addscore', async function(req, res, next) {
     }
     var userId = req.session.userId;
     var score = req.body.score;
+
     // 점수 유효성 검사
     if (!score || isNaN(score)) {
       return res.status(400).send("유효한 점수를 입력해주세요.");
     }
+
     var database = req.app.get('database');
     var users = database.collection('users');
+
     const result = await users.updateOne(
-      { _id: userId },
+      { _id: new ObjectId(userId) },
       {
         $set: {
           score: Number(score),
@@ -132,8 +135,8 @@ router.post('/addscore', async function(req, res, next) {
 
 // 점수 조회
 router.get('/score', async function(req, res, next) {
-  try{
-    if(!req.session.isAuthenticated) {
+  try {
+    if (!req.session.isAuthenticated) {
       return res.status(403).send("로그인이 필요합니다.");
     }
 
@@ -141,7 +144,7 @@ router.get('/score', async function(req, res, next) {
     var database = req.app.get('database');
     var users = database.collection('users');
 
-    const user = await users.findOne({ _id: userId });
+    const user = await users.findOne({ _id: new ObjectId(userId) });
 
     if (!user) {
       return res.status(404).send("사용자를 찾을 수 없습니다.");
@@ -154,8 +157,8 @@ router.get('/score', async function(req, res, next) {
       score: user.score || 0
     });
   } catch (err) {
-    console.error("점수 조회 중  오류 발생", err);
-    res.status(500).send("서버 오류가 발생했습니다.")
+    console.error("점수 조회 중 오류 발생: ", err);
+    res.status(500).send("서버 오류가 발생했습니다.");
   }
 });
 
